@@ -9,6 +9,7 @@ FLOW_URL = "https://flow.polar.com"
 
 def login(driver, username, password):
     driver.get("%s/login" % FLOW_URL)
+    # sleep for 1 second to make sure the page is loaded
     time.sleep(1)
     driver.find_element("name", "email").send_keys(username)
     driver.find_element("name", "password").send_keys(password)
