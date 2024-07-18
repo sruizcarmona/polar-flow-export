@@ -2,4 +2,6 @@
 /exports
 *.tcx
 *.csv
+*.xlsx
+*.zip
 .DS_Store
