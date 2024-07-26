@@ -1,0 +1,12 @@
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - certifi
+  - chardet
+  - idna
+  - requests
+  - selenium
+  - urllib3
+  - pandas
