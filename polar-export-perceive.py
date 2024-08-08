@@ -108,7 +108,7 @@ def run(driver, username, password, output_dir):
     time.sleep(5)
     # loop through years from 2022 to today
     current_year = datetime.now().year
-    for year in range(2022, current_year + 1):
+    for year in range(2023, current_year + 1):
         # loop through all months in year
         for month in range(1, 13):
             exercise_ids = get_exercise_ids(driver, year, month)
