@@ -50,20 +50,6 @@ def export_exercise(driver, exercise_id, output_dir):
         else:
             # Provide a default filename or raise an error
             raise KeyError("Response does not contain a 'Content-Disposition' header.")
-    
-    # # function to add sport to tcx file after reading csv
-    # # not needed in the end, csv can be read on the fly
-    # def _add_sport_to_tcx(tcx_file, csv_file):
-    #     # read csv file, only the headers and the first row
-    #     df = pandas.read_csv(csv_file, nrows=1)
-    #     # get value for column 'Sport'
-    #     sport = df['Sport'][0]
-    #     # change name of tcx to include sport
-    #     new_tcx = tcx_file.replace('.TCX', '_SPORT_%s.TCX' % sport)
-    #     # change file name of tcx file
-    #     os.rename(tcx_file, new_tcx)
-    #     # remove csv file
-    #     os.remove(csv_file)
 
     r = s.get("%s/api/export/training/tcx/%s" % (FLOW_URL, exercise_id))
     rcsv = s.get("%s/api/export/training/csv/%s" % (FLOW_URL, exercise_id))
@@ -101,51 +87,87 @@ def export_exercise(driver, exercise_id, output_dir):
     else:
         print("Failed to download file. Status code: %s" % r.status_code)
 
+def list_months(startdate, enddate):
+    # get month and year from startdate and enddate
+    startmonth = startdate.month
+    startyear = startdate.year
+    endmonth = enddate.month
+    endyear = enddate.year
+    # get list of months from startdate to enddate
+    year_month = []
+    for year in range(startyear, endyear + 1):
+        if year == startyear:
+            start_month = startmonth
+        else:
+            start_month = 1
+        if year == endyear:
+            end_month = endmonth
+        else:
+            end_month = 12
+        for month in range(start_month, end_month + 1):
+            year_month.append((year, month))
+    return year_month
 
-def run(driver, username, password, output_dir):
+def run(driver, username, password, output_dir, startdate, enddate):
     login(driver, username, password)
 
     time.sleep(5)
-    # loop through years from 2022 to today
-    current_year = datetime.now().year
-    for year in range(2023, current_year + 1):
-        # loop through all months in year
-        for month in range(1, 13):
-            exercise_ids = get_exercise_ids(driver, year, month)
-            for ex_id in exercise_ids:
-                export_exercise(driver, ex_id, output_dir)
+    # loop through months in the date range
+    year_month = list_months(startdate, enddate)
+    for year, month in year_month:
+        exercise_ids = get_exercise_ids(driver, year, month)
+        for ex_id in exercise_ids:
+            export_exercise(driver, ex_id, output_dir)
 
 if __name__ == "__main__":
     try:
-        (pwdfile, outdir) = sys.argv[1:]
+        (pwdfile, outdir, startdate, enddate) = sys.argv[1:]
     except ValueError:
-        sys.stderr.write(("Usage: %s <csvfile> <outdir>\n") % sys.argv[0])
+        sys.stderr.write(("Usage: python %s <csvfile> <outdir> <startdate MM/YY> <enddate MM/YY> \n") % sys.argv[0])
         sys.exit(1)
-
+    # convert startdate and enddate to datetime objects
+    try:
+        startdate = datetime.strptime(startdate, '%m/%y')  
+        enddate = datetime.strptime(enddate, '%m/%y')
+        # check if enddate is in the future, if it is, set it to today
+        if enddate > datetime.now():
+            enddate = datetime.now()
+            print("End date is in the future, setting it to today: %s" % enddate.strftime('%-m/%y'))
+    except ValueError:
+        sys.stderr.write("Please provide correct dates in the format MM/YY\n")
+        sys.exit(1)
+    # check if startdate is before enddate
+    if startdate > enddate:
+        sys.stderr.write("Start date is after End date, please provide correct dates\n")
+        sys.exit(1)
     # get usernames and passwords from a csv file
-with open(pwdfile) as f:
-    # read csv and remove newline characters
-    # lines = f.read().splitlines()
-    reader = csv.reader(f)
-    lines = [[c.replace('\ufeff', '') for c in row] for row in reader]
-    for line in lines:
-        # username, password, userid = line.split(',')
-        username, password, userid = line
-        output_dir = outdir + '/' + userid
-        # check if output_dir exists, if it does, skip user, else create the directory
-        if os.path.exists(output_dir):
-            print("Directory %s already exists, skipping participant %s" % (output_dir, userid))
-            continue
-        else:
-            #create a new directory because it does not exist
-            os.makedirs(output_dir)
-            print("New participant: %s" % userid)
+    with open(pwdfile) as f:
+        # read csv and remove newline characters
+        # lines = f.read().splitlines()
+        reader = csv.reader(f)
+        lines = [[c.replace('\ufeff', '') for c in row] for row in reader]
+        for line in lines:
+            # username, password, userid = line.split(',')
+            username, password, userid = line
+            output_dir = outdir + '/' + userid
+            # check if output_dir exists, if it does, skip user, else create the directory
+            if os.path.exists(output_dir):
+                # check if directory is empty, if it is, process participant, else skip
+                if not os.listdir(output_dir):
+                    print("Directory %s is empty, processing participant %s (%s to %s)" % (output_dir, userid, startdate.strftime('%b %Y'), enddate.strftime('%b %Y')))
+                else:
+                    print("Directory %s already exists and contains activities, skipping participant %s" % (output_dir, userid))
+                    continue
+            else:
+                #create a new directory because it does not exist
+                os.makedirs(output_dir)
+                print("New participant: %s (downloading from %s to %s)" % (userid, startdate.strftime('%b %Y'), enddate.strftime('%b %Y')))
 
-        # run chrome        
-        driver = webdriver.Chrome()
-        try:
-            run(driver, username, password, output_dir)
-        finally:
-            # print user finished
-            print("Finished user %s" % userid)
-            driver.quit()
+            # run chrome        
+            driver = webdriver.Chrome()
+            try:
+                run(driver, username, password, output_dir, startdate, enddate)
+            finally:
+                # print user finished
+                print("Finished user %s" % userid)
+                driver.quit()
