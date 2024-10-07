@@ -11,12 +11,20 @@ import pandas
 FLOW_URL = "https://flow.polar.com"
 
 def login(driver, username, password):
+    # driver = webdriver.Chrome() # for testing purposes
     driver.get("%s/login" % FLOW_URL)
     # sleep for 1 second to make sure the page is loaded
+    time.sleep(1)
+    # driver.find_element("id", "CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll").click()
+    driver.find_element("id", "CybotCookiebotDialogBodyButtonDecline").click() # new step after polar update 7/10/24 -  decline cookies
+    driver.find_element("id", "login").click() # new step after polar update 7/10/24
+    # sleep for 5 second to make sure the page is loaded
     time.sleep(5)
-    driver.find_element("name", "email").send_keys(username)
+    driver.find_element("name", "username").send_keys(username)
     driver.find_element("name", "password").send_keys(password)
-    driver.find_element("id", "login").click()
+    # updated the line below because it was not working after polar update 7/10/24
+    # driver.find_element("id", "login").click()
+    driver.find_element("xpath","//button[@class='btn btn-md btn-primary btn-block']").click() # new step after polar update 7/10/24
 
 def get_exercise_ids(driver, year, month):
     driver.get("%s/diary/%s/month/%s" % (FLOW_URL, year, month))
@@ -122,6 +130,7 @@ def run(driver, username, password, output_dir, startdate, enddate):
 if __name__ == "__main__":
     try:
         (pwdfile, outdir, startdate, enddate) = sys.argv[1:]
+        # (pwdfile, outdir, startdate, enddate) = ('test.csv', 'test', '1/24', '2/24')
     except ValueError:
         sys.stderr.write(("Usage: python %s <csvfile> <outdir> <startdate MM/YY> <enddate MM/YY> \n") % sys.argv[0])
         sys.exit(1)
