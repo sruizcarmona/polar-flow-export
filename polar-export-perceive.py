@@ -31,7 +31,7 @@ def get_exercise_ids(driver, year, month):
     time.sleep(2)
     ids = map(
         # The subscript removes the prefix
-        lambda e: e.get_attribute("href")[len("https://flow.polar.com/training/analysis/"):],
+        lambda e: e.get_attribute("href")[len("https://flow.polar.com/training/analysis2/"):],
         driver.find_elements("xpath","//div[@class='event event-month exercise']/a") +
         driver.find_elements("xpath","//div[@class='event event-month exercise event-item--has-target']/a")
     )
