@@ -69,7 +69,10 @@ def export_exercise(driver, exercise_id, output_dir):
         # get sport from csv_data
         # csv_data is a raw csv file, split by lines, take the second line (first are headers)
         # then split by comma and take the second value (SPORT)
-        mysport = csv_data.splitlines()[1].split(',')[1]
+        try:
+            mysport = csv_data.splitlines()[1].split(',')[1]
+        except IndexError:
+            mysport = 'UNKNOWN'
 
         try:
             # get the filename from the response headers for tcx and csv
